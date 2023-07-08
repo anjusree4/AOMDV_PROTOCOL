@@ -1,0 +1,80 @@
+BEGIN{
+    recv_size=0 
+    stime=1e6  #10^6
+     spTime=0    
+     NumOfRecd=0  #num of received packets
+     recv=0 
+     currentTime=previousTime=0
+    timetic=0.1
+    sendPkt=0
+    recvPkt=0
+    forwardPkt=0
+    droppedPkt=0
+}
+
+{
+event=$1
+time=$3
+node_id=$5
+packet=$19      #level of packet like agt..
+Pkt_id=$41      #Ii
+flow_id=$39     #If
+packet_size=$37  #Il
+flow_type=$45     #tcp/cbr
+if(packet=="AGT" && sendTime[pkt_id]==0 && (event =="+" || event =="s")) {     
+                                                        # if packet is agent and sendtime of packetid,enqued or sending
+
+if (time<sTime){
+      sTime=time                                                #fixing start time
+       }
+sendTime[pkt_id]=time                                    #time at which packet is sent
+this_flow=flow_type                                         # which packet at what time 
+}
+
+if(packet=="AGT" && event =="r")
+{
+if(time>spTime){
+
+       spTime=time
+}
+recv_size=recv_size + packet_size
+recvTime[pkt_id]=time   #at what time packet received
+NumOfRecd=NumOfRecd+1
+}
+
+if(event=="s" && packet=="AGT")
+  {
+   sendPkt++;
+ }
+if(event=="r" && packet=="AGT")
+{
+   recvPkt++;
+}
+
+if(event=="f" && packet=="RTR")
+{
+      forwardPkt++;
+}
+if(event=="d" && packet=="RTR")
+{
+      droppedPkt++;
+}
+}
+
+END {
+ if(NumOfRecd==0)
+ {
+       printf("no packets,the simulation is very small \n")
+ }
+   printf("Start time %d\n",sTime)
+   printf("End time %d\n",spTime)
+   printf("recieved packets  %d\n",NumOfRecd)
+    printf("delay  is %f\n",spTime-sTime)
+    printf("throughput in kbps is %f \n",(NumOfRecd)/(spTime-sTime)*(8/1000))
+    printf("num of sent packets are %d \n",sendPkt)
+    printf("num of received packets are %d \n",recvPkt)
+   printf("num of forwarded packets are %d \n",forwardPkt)
+   printf("num of dropped packets are %d \n",droppedPkt)
+   printf("packet delivery ratio is %f\n",(recvPkt/sendPkt)*100)
+   printf("packet loss is %d\n",(sendPkt-recvPkt))
+}
